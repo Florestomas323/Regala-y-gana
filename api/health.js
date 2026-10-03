@@ -11,8 +11,8 @@ export default route(["GET"], async (req, res) => {
   let ok = true;
 
   const major = Number(process.versions.node.split(".")[0]);
-  checks.node = major >= 22 ? `ok (${process.version})` : `ERROR: Node ${process.version}; se necesita 22.x`;
-  if (major < 22) ok = false;
+  checks.node = major >= 18 ? `ok (${process.version})` : `ERROR: Node ${process.version}; se necesita 18 o más`;
+  if (major < 18) ok = false;
 
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (!raw && !process.env.FIREBASE_PRIVATE_KEY) {
@@ -45,6 +45,7 @@ export default route(["GET"], async (req, res) => {
         unavailable: "ERROR: no se pudo conectar con Firestore",
       })[r] || "ERROR: " + short(e && e.message);
       checks.codigo = r;
+      if (r === "module") checks.detalle = short(e && e.message);       // nombre del módulo que falló (sin secretos)
       ok = false;
     }
   } else checks.firestore = "sin probar (primero corrige lo de arriba)";
