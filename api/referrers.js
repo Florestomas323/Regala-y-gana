@@ -1,14 +1,18 @@
 /* POST /api/referrers — Persona A crea (o recupera) su enlace personal
-   { name, phone, consent } → datos del enlace + progreso del programa
-   El plazo de 15 días empieza al crear el enlace y no se reinicia. */
-import { db, now } from "../lib/firebase.js";
+   { name, phone, consent, deviceId } → datos del enlace + progreso del programa
+   - Un enlace por teléfono. El plazo de 15 días no se reinicia.
+   - Un enlace por dispositivo mientras su plazo esté activo: si el mismo
+     dispositivo intenta crear otro con OTRO teléfono, se le devuelve el suyo. */
+import { db, now, toMs } from "../lib/firebase.js";
 import { route, send, body, rateLimit, newCode, newId, siteUrl, deadlineFrom, referrerView } from "../lib/server.js";
 import { cleanName, isValidName, normalizePhone } from "../src/validate.js";
 import { REFERRER_CONSENT_TEXT, CONSENT_VERSION } from "../src/config.js";
 
+const validDevice = (d) => /^[A-Za-z0-9-]{16,64}$/.test(String(d || ""));
+
 export default route(["POST"], async (req, res) => {
   const b = body(req);
-  if (b.website) return send(res, 400, { ok: false, error: "invalid" });          // trampa para bots
+  if (b.trap) return send(res, 400, { ok: false, error: "invalid" });               // trampa para bots
   const name = cleanName(b.name);
   const phone = normalizePhone(b.phone);
   if (!isValidName(name)) return send(res, 400, { ok: false, error: "name" });
@@ -19,22 +23,37 @@ export default route(["POST"], async (req, res) => {
   const base = siteUrl(req);
   const store = db();
   const phoneRef = store.collection("referrerPhones").doc(phone);
+  const deviceRef = validDevice(b.deviceId) ? store.collection("referrerDevices").doc(String(b.deviceId)) : null;
 
-  // Un enlace por teléfono: si ya existe, se devuelve el mismo (con su plazo original)
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = newCode();
     const result = await store.runTransaction(async (tx) => {
+      // --- lecturas (todas antes de escribir) ---
       const idx = await tx.get(phoneRef);
+      const dev = deviceRef ? await tx.get(deviceRef) : null;
+      let existing = null;
       if (idx.exists) {
-        const ref = store.collection("referrers").doc(idx.data().referrerId);
-        const snap = await tx.get(ref);
-        if (snap.exists) {
-          tx.update(ref, { lastSeenAt: now() });
-          return { existing: true, r: snap.data() };
-        }
+        const snap = await tx.get(store.collection("referrers").doc(idx.data().referrerId));
+        if (snap.exists) existing = snap.data();
+      }
+      let deviceOwner = null;
+      if (!existing && dev && dev.exists) {
+        const snap = await tx.get(store.collection("referrers").doc(dev.data().referrerId));
+        if (snap.exists && Date.now() < toMs(snap.data().deadlineAt)) deviceOwner = snap.data();
       }
       const codeRef = store.collection("referralCodes").doc(code);
-      if ((await tx.get(codeRef)).exists) return { retry: true };            // código repetido (rarísimo)
+      const codeTaken = !existing && !deviceOwner ? (await tx.get(codeRef)).exists : false;
+
+      // --- 1. ese teléfono ya tiene enlace: se devuelve el mismo ---
+      if (existing) {
+        tx.update(store.collection("referrers").doc(existing.id), { lastSeenAt: now() });
+        if (deviceRef) tx.set(deviceRef, { referrerId: existing.id, updatedAt: now() });
+        return { existing: true, r: existing };
+      }
+      // --- 2. este dispositivo ya tiene un enlace activo con otro teléfono ---
+      if (deviceOwner) return { device: true, r: deviceOwner };
+      // --- 3. enlace nuevo ---
+      if (codeTaken) return { retry: true };                                  // código repetido (rarísimo)
       const id = newId();
       const createdMs = Date.now();
       const r = {
@@ -48,9 +67,13 @@ export default route(["POST"], async (req, res) => {
       tx.create(store.collection("referrers").doc(id), r);
       tx.create(codeRef, { referrerId: id, createdAt: now() });
       tx.set(phoneRef, { referrerId: id, createdAt: now() });
+      if (deviceRef) tx.set(deviceRef, { referrerId: id, updatedAt: now() });
       return { existing: false, r: { ...r, createdAt: new Date(createdMs) } };
     });
     if (result.retry) continue;
+    if (result.device) {
+      return send(res, 409, { ok: false, error: "device_active", existingReferrer: referrerView(result.r, base) });
+    }
     return send(res, 200, { ok: true, existing: result.existing, ...referrerView(result.r, base) });
   }
   send(res, 500, { ok: false, error: "code" });

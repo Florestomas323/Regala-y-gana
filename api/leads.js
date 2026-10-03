@@ -9,7 +9,7 @@ import { CAMPAIGN_ID, CONSENT_TEXT, CONSENT_VERSION } from "../src/config.js";
 
 export default route(["POST"], async (req, res) => {
   const b = body(req);
-  if (b.website) return send(res, 400, { ok: false, error: "invalid" });
+  if (b.trap) return send(res, 400, { ok: false, error: "invalid" });          // trampa para bots
   const code = String(b.code || "").toUpperCase();
   const name = cleanName(b.name);
   const phone = normalizePhone(b.phone);
