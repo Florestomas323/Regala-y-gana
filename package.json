@@ -9,9 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google-cloud/firestore": "^9.3.1",
+    "@google-cloud/firestore": "^7.11.0",
     "firebase": "^12.19.0",
-    "firebase-admin": "^14.5.0",
+    "firebase-admin": "^13.10.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
