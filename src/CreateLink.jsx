@@ -11,11 +11,15 @@ const shortDate = (iso) => (iso ? new Date(iso).toLocaleDateString("es-US", { da
 
 export default function CreateLink() {
   const [saved, setSaved] = useState(() => { try { return JSON.parse(localStorage.getItem(SAVED) || "null"); } catch { return null; } });
+  const [notice, setNotice] = useState("");
   const keep = (me) => { localStorage.setItem(SAVED, JSON.stringify(me)); setSaved(me); };
   return saved
-    ? <ShareScreen me={saved} onUpdate={keep} onReset={() => { localStorage.removeItem(SAVED); setSaved(null); }} />
-    : <CreateForm onDone={(me) => { keep(me); window.scrollTo(0, 0); }} />;
+    ? <ShareScreen me={saved} notice={notice} onUpdate={keep} onReset={() => { localStorage.removeItem(SAVED); setSaved(null); setNotice(""); }} />
+    : <CreateForm onDone={(me, msg) => { keep(me); setNotice(msg || ""); window.scrollTo(0, 0); }} />;
 }
+
+/* Mientras el plazo está activo, este dispositivo queda con su enlace */
+const lockedUntil = (me) => (me.progress && Date.now() < Date.parse(me.progress.deadlineAt) ? me.progress.deadlineAt : null);
 
 function fromApi(d) {
   return { referrerId: d.referrerId, name: d.name, code: d.referralCode, url: d.referralUrl, progress: d.progress };
@@ -36,8 +40,12 @@ function CreateForm({ onDone }) {
     setTouched({ name: true, phone: true, consent: true });
     if (!nameOk || !phoneOk || !consent || busy) return;
     setBusy(true); setError("");
-    const r = await api.createReferrer(name, phone, e.target.website.value, true);
+    const r = await api.createReferrer(name, phone, e.target.rg_hp_x7.value, true);
     setBusy(false);
+    if (!r.ok && r.data && r.data.error === "device_active" && r.data.existingReferrer) {
+      const ex = fromApi(r.data.existingReferrer);
+      return onDone(ex, `Este dispositivo ya tiene un enlace activo hasta el ${shortDate(ex.progress.deadlineAt)}. Aquí lo tienes.`);
+    }
     if (!r.ok) return setError(errorText(r));
     onDone(fromApi(r.data));
   }
@@ -63,7 +71,7 @@ function CreateForm({ onDone }) {
             <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
             <span>{REFERRER_CONSENT_TEXT}</span>
           </label>
-          <input className="hp" type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" />
+          <input className="hp" type="text" name="rg_hp_x7" id="rg_hp_x7" tabIndex={-1} autoComplete="off" data-lpignore="true" data-1p-ignore="true" aria-hidden="true" />
           <button className="btn btn-primary" type="submit" disabled={busy || !nameOk || !phoneOk || !consent}>
             {busy ? <><Spinner /> Creando…</> : "CREAR MI ENLACE"}
           </button>
@@ -82,7 +90,7 @@ function CreateForm({ onDone }) {
 }
 
 /* ---------- 2. Compartir + progreso ---------- */
-function ShareScreen({ me, onUpdate, onReset }) {
+function ShareScreen({ me, notice, onUpdate, onReset }) {
   const [toast, showToast] = useToast();
   const [loading, setLoading] = useState(false);
   const waText = useMemo(() => MESSAGES.shareWhatsApp(me.name, me.url), [me.name, me.url]);
@@ -113,6 +121,7 @@ function ShareScreen({ me, onUpdate, onReset }) {
           <h1 className="hero-title">¡Tu enlace está listo!</h1>
           <p className="hero-sub">Ahora comparte un regalo con alguien especial.</p>
         </header>
+        {notice ? <p className="notice">{notice}</p> : null}
 
         <section className="card">
           <div className="link-box" aria-label="Tu enlace personal"><span className="link-text">{me.url}</span></div>
@@ -140,7 +149,9 @@ function ShareScreen({ me, onUpdate, onReset }) {
           </div>
         </section>
 
-        <p className="center fine">¿No eres {me.name}? <button type="button" className="linklike" onClick={onReset}>Crear otro enlace</button></p>
+        {lockedUntil(me)
+          ? <p className="center fine">Tu enlace está activo en este dispositivo hasta el {shortDate(lockedUntil(me))}.</p>
+          : <p className="center fine">¿No eres {me.name}? <button type="button" className="linklike" onClick={onReset}>Crear otro enlace</button></p>}
       </main>
       <Footer />
       {toast}
@@ -185,10 +196,13 @@ function Program({ me, onUpdate, loading, onRefresh }) {
         ))}
       </div>
       <p className="program-count"><b>{done} de {p.required}</b> regalos entregados</p>
+      {p.state === "active" && <p className="program-time">{p.daysLeft === 1 ? "Te queda 1 día" : `Te quedan ${p.daysLeft} días`}</p>}
 
-      {p.state === "active" && (
-        <p className="program-time">{p.daysLeft === 1 ? "Te queda 1 día" : `Te quedan ${p.daysLeft} días`} · {p.registrations} {p.registrations === 1 ? "persona registrada" : "personas registradas"} con tu enlace</p>
-      )}
+      <div className="mini-stats">
+        <div><b>{p.linksOpened}</b><span>{p.linksOpened === 1 ? "visita" : "visitas"} a tu enlace</span></div>
+        <div><b>{p.registrations}</b><span>{p.registrations === 1 ? "registrado" : "registrados"}</span></div>
+        <div><b>{done}</b><span>{done === 1 ? "entregado" : "entregados"}</span></div>
+      </div>
 
       {p.state === "qualified" && p.rewardStatus === "none" && (
         ready ? (

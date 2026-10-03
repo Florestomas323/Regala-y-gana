@@ -106,7 +106,7 @@ function LeadForm({ code, referrerName, onDone }) {
     setTouched({ name: true, phone: true, consent: true });
     if (!nameOk || !phoneOk || !consent || busy) return;
     setBusy(true); setError("");
-    const r = await api.registerLead({ code, name, phone, consent: true, website: e.target.website.value });
+    const r = await api.registerLead({ code, name, phone, consent: true, trap: e.target.rg_hp_x7.value });
     setBusy(false);
     if (!r.ok) return setError(errorText(r));
     onDone(r.data.lead);
@@ -132,7 +132,7 @@ function LeadForm({ code, referrerName, onDone }) {
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
           <span>{CONSENT_TEXT}</span>
         </label>
-        <input className="hp" type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" />
+        <input className="hp" type="text" name="rg_hp_x7" id="rg_hp_x7" tabIndex={-1} autoComplete="off" data-lpignore="true" data-1p-ignore="true" aria-hidden="true" />
         <button className="btn btn-primary" type="submit" disabled={busy || !nameOk || !phoneOk || !consent}>
           {busy ? <><Spinner /> Guardando…</> : "DESCUBRIR MI REGALO"}
         </button>

@@ -21,7 +21,7 @@ async function call(path, { method = "POST", body, headers = {}, timeout = 15000
 }
 
 export const api = {
-  createReferrer: (name, phone, website, consent) => call("/api/referrers", { body: { name, phone, website, consent } }),
+  createReferrer: (name, phone, trap, consent) => call("/api/referrers", { body: { name, phone, trap, consent, deviceId: deviceId() } }),
   openReferral: (code, countOpen) => call("/api/referral-open", { body: { code, countOpen } }),
   registerLead: (payload) => call("/api/leads", { body: payload }),
   getLead: (id) => call("/api/lead?id=" + encodeURIComponent(id), { method: "GET" }),
@@ -35,11 +35,25 @@ export const api = {
   }),
 };
 
-/* Mensajes de error claros para la persona */
+/* Identificador de este dispositivo (para un enlace activo por dispositivo).
+   Se guarda en el navegador; no contiene datos personales. */
+export function deviceId() {
+  const K = "rg_device";
+  try {
+    let id = localStorage.getItem(K) || (document.cookie.match(/(?:^|; )rg_device=([^;]+)/) || [])[1];
+    if (!id) id = (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
+    localStorage.setItem(K, id);
+    document.cookie = `${K}=${id}; max-age=${60 * 60 * 24 * 400}; path=/; SameSite=Lax; Secure`;
+    return id;
+  } catch { return ""; }
+}
+
+/* Mensajes de error claros para la persona. Si es un error inesperado,
+   se agrega un código corto para poder revisarlo. */
 export function errorText(r, fallback = "No pudimos completar la acción. Inténtalo de nuevo.") {
   const e = r && r.data && r.data.error;
   if (r && r.status === 0) return "Sin conexión. Revisa tu internet e inténtalo de nuevo.";
-  return ({
+  const known = {
     name: "Escribe tu nombre (solo letras).",
     phone: "Escribe un número de teléfono válido.",
     consent: "Debes aceptar el uso de tus datos para continuar.",
@@ -49,5 +63,7 @@ export function errorText(r, fallback = "No pudimos completar la acción. Intén
     code: "Este enlace no es válido o ya no está activo.",
     own_link: "Este enlace es tuyo: compártelo con alguien especial para que reciba su regalo.",
     rate: "Hay muchos intentos en este momento. Espera un minuto e inténtalo otra vez.",
-  })[e] || fallback;
+    invalid: "Revisa el formulario e inténtalo de nuevo.",
+  }[e];
+  return known || `${fallback} (código ${r ? r.status : "?"}${e ? "-" + e : ""})`;
 }
