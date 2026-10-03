@@ -186,6 +186,19 @@ Si definiste `ADMIN_KEY`, también puedes entrar con esa clave.
 
 ---
 
+## 7b. Información legal (Texas / EE. UU.)
+
+- Texas regula los regalos que se entregan a cambio de asistir a una presentación de ventas
+  (Código de Negocios y Comercio, capítulo 621). La página `/terminos` ya muestra: quién ofrece los regalos,
+  que hay que asistir a una cita con demostración, que no se requiere compra, la lista de regalos con su
+  probabilidad y, si lo llenas, el valor aproximado de cada uno.
+- **Llena en `src/config.js` → `LEGAL`:** `sponsorAddress` (ciudad y estado) y `presentationMinutes`
+  (duración aproximada de la demostración). En `src/prizes.js` puedes agregar `retailValue` a cada premio.
+- Las probabilidades no se muestran en la ruleta (como pediste), solo en `/terminos`.
+- Los mensajes de texto y WhatsApp los envías tú a mano (no hay envíos automáticos), y cada persona
+  acepta ser contactada; aun así, deja de contactar a quien lo pida.
+- **Nada de esto sustituye la revisión de un abogado en Texas.**
+
 ## 8. Seguridad y reglas de negocio
 
 - **La página nunca toca la base de datos**: todo pasa por `/api`, con la clave de Firebase guardada en Vercel (nunca en el navegador).
