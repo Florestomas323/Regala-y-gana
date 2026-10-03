@@ -18,7 +18,7 @@ export default route(["POST"], async (req, res) => {
   if (!isValidName(name)) return send(res, 400, { ok: false, error: "name" });
   if (!phone) return send(res, 400, { ok: false, error: "phone" });
   if (b.consent !== true) return send(res, 400, { ok: false, error: "consent" });
-  if (!(await rateLimit(req, "referrer", 15, 10))) return send(res, 429, { ok: false, error: "rate" });
+  if (!(await rateLimit(req, "referrer", 40, 10))) return send(res, 429, { ok: false, error: "rate" });
 
   const base = siteUrl(req);
   const store = db();

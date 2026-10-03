@@ -1,6 +1,6 @@
 /* GET /api/health — diagnóstico de la instalación (no muestra ningún secreto)
    Ábrelo en el navegador: https://TU-DOMINIO/api/health */
-import { db } from "../lib/firebase.js";
+import { db, reasonOf } from "../lib/firebase.js";
 import { route, send } from "../lib/server.js";
 import { PANEL_ADMINS } from "../src/config.js";
 
@@ -33,10 +33,18 @@ export default route(["GET"], async (req, res) => {
       await db().collection("rateLimits").doc("_health").get();
       checks.firestore = "ok";
     } catch (e) {
-      const m = short(e && e.message);
-      checks.firestore = /NOT_FOUND|does not exist/i.test(m) ? "ERROR: no existe la base Firestore (créala en Firebase → Firestore Database)"
-        : /PERMISSION_DENIED/i.test(m) ? "ERROR: la clave no tiene permiso sobre este proyecto"
-        : "ERROR: " + m;
+      const r = reasonOf(e);
+      checks.firestore = ({
+        module: "ERROR: no se pudo cargar la librería de Firebase en Vercel (redeploy sin caché)",
+        credentials_key: "ERROR: la clave privada del JSON está dañada (vuelve a generarla y pégala completa)",
+        credentials_fields: "ERROR: al JSON le faltan datos (vuelve a pegarlo completo)",
+        firestore_missing: "ERROR: no existe la base Firestore (Firebase → Firestore Database → Crear)",
+        permission: "ERROR: la clave no tiene permiso sobre este proyecto (¿es de regala-y-gana?)",
+        unauthenticated: "ERROR: Google rechazó la clave (¿la borraste o regeneraste? pega la nueva en Vercel)",
+        timeout: "ERROR: Firestore tardó demasiado en responder",
+        unavailable: "ERROR: no se pudo conectar con Firestore",
+      })[r] || "ERROR: " + short(e && e.message);
+      checks.codigo = r;
       ok = false;
     }
   } else checks.firestore = "sin probar (primero corrige lo de arriba)";
