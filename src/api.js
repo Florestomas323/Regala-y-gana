@@ -11,7 +11,7 @@ async function call(path, { method = "POST", body, headers = {}, timeout = 15000
       keepalive,
     });
     let data = {};
-    try { data = await res.json(); } catch {}
+    try { data = await res.json(); } catch { if (res.status >= 500) data = { error: "platform" }; }   // Vercel respondió sin pasar por nuestro código
     return { ok: res.ok && data.ok !== false, status: res.status, data };
   } catch {
     return { ok: false, status: 0, data: { error: "network" } };
@@ -65,5 +65,6 @@ export function errorText(r, fallback = "No pudimos completar la acción. Intén
     rate: "Hay muchos intentos en este momento. Espera un minuto e inténtalo otra vez.",
     invalid: "Revisa el formulario e inténtalo de nuevo.",
   }[e];
-  return known || `${fallback} (código ${r ? r.status : "?"}${e ? "-" + e : ""})`;
+  const reason = r && r.data && r.data.reason;
+  return known || `${fallback} (código ${r ? r.status : "?"}${e ? "-" + e : ""}${reason ? "-" + reason : ""})`;
 }

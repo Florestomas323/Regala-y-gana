@@ -1,5 +1,6 @@
 /* /privacidad y /terminos — textos base: revísalos con tu asesor legal antes de publicar */
-import { ORGANIZER, SITE_NAME, DELIVERY, CAMPAIGN_ID, REFERRAL_PROGRAM, REFERRER_REWARDS, rewardsReady, CONSENT_VERSION } from "./config.js";
+import { ORGANIZER, SITE_NAME, DELIVERY, CAMPAIGN_ID, REFERRAL_PROGRAM, REFERRER_REWARDS, rewardsReady, CONSENT_VERSION, LEGAL } from "./config.js";
+import { activePrizes } from "./prizes.js";
 import { Brand, Footer } from "./ui.jsx";
 
 export default function Legal({ page }) {
@@ -66,6 +67,9 @@ function Terms() {
     <>
       <h1>Términos y bases del programa</h1>
 
+      <h2>Información sobre los regalos</h2>
+      <Disclosure />
+
       <h2>Para quien recibe un regalo</h2>
       <ul>
         <li>Un giro por persona y por número de teléfono en esta campaña ({CAMPAIGN_ID}).</li>
@@ -90,10 +94,42 @@ function Terms() {
 
       <h2>Para todos</h2>
       <ul>
+        <li>{LEGAL.eligibility}</li>
+      </ul>
+      <ul>
         <li>Datos falsos, registros duplicados o el uso indebido del programa pueden anular los regalos.</li>
         <li>El uso de tus datos se explica en el <a href="/privacidad">Aviso de privacidad</a>.</li>
         <li>Dudas: {ORGANIZER.name} · {ORGANIZER.phoneDisplay}.</li>
       </ul>
     </>
+  );
+}
+
+/* Divulgación exigida en Texas para regalos ligados a una presentación de ventas */
+function Disclosure() {
+  const prizes = activePrizes();
+  const total = prizes.reduce((a, p) => a + Number(p.weight), 0);
+  const addr = LEGAL.sponsorAddress && !/PENDIENTE/i.test(LEGAL.sponsorAddress) ? `, ${LEGAL.sponsorAddress}` : "";
+  const mins = LEGAL.presentationMinutes && !/PENDIENTE/i.test(LEGAL.presentationMinutes) ? ` de aproximadamente ${LEGAL.presentationMinutes} minutos` : "";
+  const values = LEGAL.showValuesInTerms && prizes.some((p) => p.retailValue);
+  return (
+    <ul>
+      <li><b>Quién los ofrece:</b> {LEGAL.sponsorName || ORGANIZER.name}{addr} · {ORGANIZER.phoneDisplay}.</li>
+      <li><b>Para recibir el regalo es necesario asistir a una cita</b> con una charla informativa sobre bienestar y una
+        demostración{mins} de nuestros productos para el cuidado del hogar y el bienestar.</li>
+      {DELIVERY.showNoPurchaseNote ? <li><b>No se requiere compra</b> para participar ni para recibir el regalo.</li> : null}
+      <li><b>Regalos de la ruleta</b>{LEGAL.showOddsInTerms ? " y probabilidad de obtener cada uno" : ""}{values ? " (valor aproximado)" : ""}:
+        <ul>
+          {prizes.map((p) => (
+            <li key={p.id}>{p.name}
+              {LEGAL.showOddsInTerms && total ? ` — ${Math.round((Number(p.weight) / total) * 1000) / 10}%` : ""}
+              {values && p.retailValue ? ` — aprox. $${p.retailValue}` : ""}
+            </li>
+          ))}
+        </ul>
+      </li>
+      <li>Todos los participantes reciben un regalo. El regalo se entrega en la cita, sujeto a disponibilidad; si no hubiera
+        existencias, se entrega otro de valor igual o similar.</li>
+    </ul>
   );
 }

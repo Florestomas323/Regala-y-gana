@@ -1,7 +1,7 @@
 /* /r/CODIGO — Persona B: registro → ruleta (1 giro) → premio → WhatsApp */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, errorText } from "./api.js";
-import { BUSINESS_WHATSAPP, CONSENT_TEXT, DATA_USE, DELIVERY, MESSAGES } from "./config.js";
+import { BUSINESS_WHATSAPP, CONSENT_TEXT, DATA_USE, DELIVERY, MESSAGES, LEGAL } from "./config.js";
 import { activePrizes, findPrize } from "./prizes.js";
 import { isValidName, normalizePhone, maskPhoneInput, isValidCode } from "./validate.js";
 import { Brand, Footer, Field, Spinner, GiftIcon, PolicyLinks } from "./ui.jsx";
@@ -225,7 +225,7 @@ function Result({ lead, fresh }) {
 
       <section className="card info">
         <h3 className="info-title">{DELIVERY.title}</h3>
-        <p>{DELIVERY.body}</p>
+        <p>{DELIVERY.body}{LEGAL.presentationMinutes && !/PENDIENTE/i.test(LEGAL.presentationMinutes) ? ` La cita dura aproximadamente ${LEGAL.presentationMinutes} minutos.` : ""}</p>
         {DELIVERY.showNoPurchaseNote ? <p className="info-note">{DELIVERY.noPurchaseNote}</p> : null}
       </section>
 

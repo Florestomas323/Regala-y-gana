@@ -75,10 +75,28 @@ export const REFERRER_CONSENT_TEXT =
 export const DATA_USE = {
   referrer:
     "Usamos tu nombre y teléfono solo para identificar tu enlace, mostrar tu nombre a quien invites y " +
-    "contactarte para entregarte tus regalos. No vendemos ni compartimos tus datos, y no enviamos mensajes a tus contactos.",
+    "contactarte para entregarte tus regalos. No vendemos ni compartimos tus datos, y no enviamos mensajes a tus contactos. " +
+    "Aceptar no te obliga a comprar nada.",
   recipient:
     "Usamos tu nombre y teléfono solo para contactarte y coordinar la entrega de tu regalo. " +
-    "Quien te envió el enlace no ve tus datos. No los vendemos ni compartimos.",
+    "Quien te envió el enlace no ve tus datos. No los vendemos ni compartimos. Aceptar no te obliga a comprar nada.",
+};
+
+/* ===================== INFORMACIÓN LEGAL (Texas / EE. UU.) =====================
+   Texas regula los regalos que se entregan a cambio de asistir a una
+   presentación de ventas (Código de Negocios y Comercio, capítulo 621):
+   exige decir por escrito quién los ofrece y dónde, que hay que asistir a
+   una presentación y de qué es, el valor aproximado de cada regalo y las
+   probabilidades cuando no todos reciben lo mismo, y que no hace falta
+   comprar. Esto se muestra en /terminos. Llena lo que falta y confírmalo
+   con tu abogado. Lo que quede vacío no se muestra. */
+export const LEGAL = {
+  sponsorName: "Tomás Flores",   // quién ofrece los regalos
+  sponsorAddress: "",            // ciudad y estado (ej. "Fort Worth, Texas") — PENDIENTE
+  presentationMinutes: "",       // duración aproximada de la demostración, ej. "60" — PENDIENTE
+  showOddsInTerms: true,         // probabilidades de cada regalo en /terminos (no en la ruleta)
+  showValuesInTerms: true,       // valor aproximado de cada regalo si lo llenas en prizes.js (retailValue)
+  eligibility: "Mayores de 18 años.",
 };
 
 /* ===================== PANEL ===================== */

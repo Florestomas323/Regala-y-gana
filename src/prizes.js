@@ -8,6 +8,7 @@
              con 25/25/20/10/10/5/5 cada número es directamente el %.
    active  : false = sale de la ruleta (los que ya lo ganaron lo conservan)
    wheelLabel (opcional): líneas de texto dentro de la ruleta
+   retailValue (opcional): valor aproximado en dólares, ej. "45" (se muestra en /terminos)
 
    El orden de la lista es el orden de la ruleta (en sentido horario,
    empezando bajo la flecha). El premio lo elige SIEMPRE el servidor.
