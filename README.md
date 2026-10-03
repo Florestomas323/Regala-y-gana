@@ -71,6 +71,7 @@ regala-y-gana/
 │   ├── spin.js           elige y guarda el premio (1 giro)
 │   ├── claim.js          guarda el clic en RECLAMA TU REGALO
 │   ├── referrer.js       progreso de quien comparte y elección de su regalo
+│   ├── health.js         diagnóstico: abre /api/health para revisar la instalación
 │   └── admin.js          panel: acceso con Google, estados, entregas y regalos
 ├── lib/                  utilidades del servidor (Firebase, límites, códigos)
 └── public/
@@ -140,6 +141,8 @@ Eventos: `referral_link_opened, lead_registered, wheel_spun, prize_won, claim_cl
 | `ALLOWED_ORIGINS` | opcional | otros dominios autorizados, separados por coma |
 
 5. **Deploy**. Si cambias una variable después, haz *Redeploy*.
+   El proyecto usa **Node 22** (lo fija `package.json`; no hace falta tocarlo en Vercel).
+   **Comprueba la instalación** abriendo `https://TU-DOMINIO/api/health`: todo debe decir `ok`.
 6. En Vercel: *Settings → Deployment Protection* → desactívala (si no, tus invitados verían un login de Vercel).
 7. Si usas dominio propio: *Settings → Domains*.
 
@@ -168,7 +171,11 @@ Si definiste `ADMIN_KEY`, también puedes entrar con esa clave.
   y un botón para coordinar contigo por WhatsApp. Tú marcas en el panel cuando se lo entregas.
 - Mientras `REFERRER_REWARDS` diga `PENDIENTE`, la página dice “un regalo especial” y no deja elegir:
   te avisa que la contactarás. En el panel también puedes asignarle el regalo tú mismo.
-- Quien comparte solo ve **cuántos** invitados van, nunca sus nombres ni teléfonos.
+- Quien comparte ve sus **visitas al enlace, registrados y entregados** (solo números, nunca nombres ni teléfonos).
+- **Un enlace activo por dispositivo:** mientras su plazo esté activo, desde ese teléfono no se puede crear
+  otro enlace con otro número (se le muestra el suyo). Al vencer el plazo, puede crear otro.
+  Nota: si alguien borra los datos del navegador o usa navegación privada, el dispositivo no se reconoce;
+  el control fuerte es por número de teléfono (un enlace por número, con su plazo original).
 
 ## 7. Consentimientos y privacidad
 
